@@ -115,8 +115,98 @@ function renderMap() {
   el("map").innerHTML = h;
 }
 
+
+/* ---- the activity graph ----------------------------------------------
+
+   A year of calendar days, one square each, darker the more you did.
+   Weeks run down the columns and forward across, the way GitHub's does,
+   because that is the shape people already know how to read.
+
+   Two decisions worth recording. The scale is relative to your own busiest
+   day rather than a fixed number, so a light week still shows contrast
+   instead of a wall of the palest shade. And empty days are drawn rather
+   than skipped -- the gaps are the honest part, and a graph that hid them
+   would be decoration. */
+function renderGraph() {
+  const box = el("graph");
+  if (!box) return;
+
+  const act = Progress.state.act || {};
+  const today = new Date(Progress.today() + "T00:00:00");
+
+  // start on the Sunday on or before 52 weeks ago, so columns are whole weeks
+  const start = new Date(today);
+  start.setDate(start.getDate() - 364);
+  start.setDate(start.getDate() - start.getDay());
+
+  const iso = d => Progress.iso(d);   // local dates, not UTC: see Progress.iso
+  const counts = [];
+  let peak = 0;
+  for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+    const key = iso(d);
+    const n = act[key] || 0;
+    if (n > peak) peak = n;
+    counts.push({ key, n, dow: d.getDay(), month: d.getMonth() });
+  }
+
+  const level = n => {
+    if (!n) return 0;
+    if (peak <= 1) return 4;
+    const r = n / peak;
+    return r > 0.66 ? 4 : r > 0.33 ? 3 : r > 0.12 ? 2 : 1;
+  };
+
+  // columns of seven, padded so the first week starts on the right weekday
+  const weeks = [];
+  let week = new Array(counts[0].dow).fill(null);
+  counts.forEach(c => {
+    week.push(c);
+    if (week.length === 7) { weeks.push(week); week = []; }
+  });
+  if (week.length) { while (week.length < 7) week.push(null); weeks.push(week); }
+
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let labels = "", seen = -1;
+  weeks.forEach((w, i) => {
+    const first = w.find(Boolean);
+    if (first && first.month !== seen && first.key.slice(-2) <= "07") {
+      labels += `<span class="g-mo" style="grid-column:${i + 1}">${MONTHS[first.month]}</span>`;
+      seen = first.month;
+    }
+  });
+
+  const active = counts.filter(c => c.n > 0).length;
+  const total  = counts.reduce((n, c) => n + c.n, 0);
+  const streak = Progress.streak();
+  const best   = Progress.state.bestStreak || 0;
+
+  const cells = weeks.map(w => w.map(c => {
+    if (!c) return `<i class="g-c g-pad"></i>`;
+    const when = new Date(c.key + "T00:00:00")
+      .toLocaleDateString(undefined, { day: "numeric", month: "short" });
+    const what = c.n === 0 ? "nothing" : `${c.n} ${c.n === 1 ? "thing" : "things"}`;
+    return `<i class="g-c" data-l="${level(c.n)}" title="${what} on ${when}"></i>`;
+  }).join("")).join("");
+
+  box.innerHTML = `
+    <div class="g-head">
+      <h2>Your year</h2>
+      <span class="g-sum">${total} ${total === 1 ? "thing" : "things"} on ${active} ${active === 1 ? "day" : "days"}</span>
+    </div>
+    <div class="g-wrap">
+      <div class="g-months" style="grid-template-columns:repeat(${weeks.length},var(--gc))">${labels}</div>
+      <div class="g-grid" style="grid-template-columns:repeat(${weeks.length},var(--gc))">${cells}</div>
+    </div>
+    <div class="g-foot">
+      <span class="g-streak"><b>${streak}</b> day${streak === 1 ? "" : "s"} in a row${best > streak ? ` &middot; best ${best}` : ""}</span>
+      <span class="g-key">less
+        <i class="g-c" data-l="0"></i><i class="g-c" data-l="1"></i><i class="g-c" data-l="2"></i><i class="g-c" data-l="3"></i><i class="g-c" data-l="4"></i>
+        more</span>
+    </div>`;
+}
+
 function renderAll() {
-  renderContinue(); renderStats(); renderMap();
+  renderContinue(); renderStats(); renderGraph(); renderMap();
   const rg = el("curr-range");
   if (rg) rg.textContent = `Days 1\u2013${DAYS.length} \u00b7 SQL from zero to interview-ready`;
   const cs = el("curr-stats");

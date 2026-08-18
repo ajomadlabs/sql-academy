@@ -32,12 +32,65 @@ const Progress = {
   dayDone(n)        { return !!this.state["d" + n]; },
   problemDone(pid)  { return !!this.state[pid]; },
 
-  setProblem(pid, v) { this.state[pid] = v; this.save(); },
+  setProblem(pid, v) {
+    this.state[pid] = v;
+    if (v) this.touch();          // solving counts as studying
+    this.save();
+  },
+
+  /* ---- activity ---------------------------------------------------------
+
+     One counter per calendar day: what the graph is drawn from, and now
+     what the streak is computed from too.
+
+     The streak used to move only when a day was marked complete, so
+     someone who solved twenty problems and never ticked the box had a
+     streak of zero. Any real work counts now.
+
+     Nothing here can be backfilled. Before this, only the most recent
+     study date was kept, so the graph necessarily starts from the day
+     this shipped -- inventing plausible history would be worse than an
+     empty chart. */
+  act() { return (this.state.act = this.state.act || {}); },
+
+  touch() {
+    const t = this.today();
+    const a = this.act();
+    a[t] = (a[t] || 0) + 1;
+    this.state.lastStudied = t;
+    const s = this.streakFrom(a);
+    this.state.streak = s;
+    if (s > (this.state.bestStreak || 0)) this.state.bestStreak = s;
+  },
+
+  /* Counts back from today, allowing yesterday to be the latest day so a
+     streak is not lost before the day is over. */
+  streakFrom(a) {
+    const days = Object.keys(a || {}).filter(d => a[d] > 0).sort();
+    if (!days.length) return 0;
+    const last = days[days.length - 1];
+    const gap = this.daysBetween(last, this.today());
+    if (gap > 1) return 0;
+    let n = 1, cursor = last;
+    const set = new Set(days);
+    for (;;) {
+      const prev = this.shiftDate(cursor, -1);
+      if (!set.has(prev)) break;
+      n++; cursor = prev;
+    }
+    return n;
+  },
+
+  shiftDate(day, delta) {
+    const d = new Date(day + "T00:00:00");
+    d.setDate(d.getDate() + delta);
+    return this.iso(d);
+  },
 
   /* Marking a day complete is the moment that drives the streak. */
   setDay(n, v) {
     this.state["d" + n] = v;
-    if (v) this.touchStreak();
+    if (v) this.touch();
     this.save();
   },
 
@@ -73,10 +126,17 @@ const Progress = {
      completed. Studying twice in one day does not inflate it; missing a
      day resets it. Stored as a plain YYYY-MM-DD string so it survives
      timezone changes better than a timestamp. */
-  today() {
-    const t = new Date();
-    return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;
+  /* A calendar day in the reader's own timezone.
+
+     Deliberately not toISOString(), which converts to UTC first: east of
+     Greenwich that returns yesterday for most of the day, so today's work
+     would land on the wrong square and the streak would count from the
+     wrong end. Every date in this file goes through here. */
+  iso(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   },
+
+  today() { return this.iso(new Date()); },
   daysBetween(a, b) {
     return Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000);
   },
@@ -92,6 +152,7 @@ const Progress = {
   },
   /* Read the streak lazily so a stale one decays without needing a write. */
   streak() {
+    if (this.state.act) return this.streakFrom(this.state.act);
     const last = this.state.lastStudied;
     if (!last) return 0;
     const gap = this.daysBetween(last, this.today());

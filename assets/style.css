@@ -785,3 +785,36 @@ span.eng.on{cursor:default}
 .scen-close{margin:12px 0 0;color:var(--text);max-width:72ch;font-size:14.5px}
 .refs a{display:block}
 .refs span{display:block;margin:-2px 0 10px;color:var(--faint);font-size:13px;max-width:70ch}
+
+/* ---------------- activity graph ---------------- */
+.graph{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+       padding:20px 22px;margin:0 0 26px}
+.g-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;
+        margin:0 0 14px}
+.g-head h2{font-family:var(--mono);font-size:15px;font-weight:600;margin:0;color:var(--text)}
+.g-sum{font-family:var(--mono);font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* the grid scrolls sideways on narrow screens rather than squashing the
+   squares into unreadable slivers */
+.graph{--gc:12px}
+.g-wrap{overflow-x:auto;padding-bottom:2px}
+.g-months{display:grid;gap:3px;width:max-content;height:14px;margin-bottom:3px}
+.g-mo{font-family:var(--mono);font-size:10px;color:var(--faint);grid-row:1;white-space:nowrap}
+.g-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,var(--gc));gap:3px;
+        width:max-content}
+.g-c{display:block;width:var(--gc);height:var(--gc);border-radius:2px;background:var(--surface-2);
+     border:1px solid var(--line)}
+.g-pad{background:none;border-color:transparent}
+.g-c[data-l="1"]{background:color-mix(in srgb,var(--done) 26%,var(--surface-2));border-color:transparent}
+.g-c[data-l="2"]{background:color-mix(in srgb,var(--done) 48%,var(--surface-2));border-color:transparent}
+.g-c[data-l="3"]{background:color-mix(in srgb,var(--done) 72%,var(--surface-2));border-color:transparent}
+.g-c[data-l="4"]{background:var(--done);border-color:transparent}
+
+.g-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+        margin-top:12px}
+.g-streak{font-size:13.5px;color:var(--muted)}
+.g-streak b{color:var(--text);font-family:var(--mono);font-variant-numeric:tabular-nums}
+.g-key{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10.5px;
+       color:var(--faint)}
+.g-key .g-c{width:11px;height:11px}
+@media (max-width:700px){ .graph{padding:16px} }

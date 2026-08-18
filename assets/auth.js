@@ -97,12 +97,30 @@ const Auth = {
       if (id) out[id] = true;
     });
 
+    /* Activity: union by date, keeping the larger count. Summing would
+       double-count a day worked on two devices that both synced; the
+       larger number is the closer estimate and cannot inflate on every
+       subsequent sync the way a sum would. */
+    const act = Object.assign({}, local.act || {});
+    Object.entries(remote.activity || {}).forEach(([day, n]) => {
+      act[day] = Math.max(act[day] || 0, n || 0);
+    });
+    out.act = act;
+
     // streak: keep the better record from either device
     out.bestStreak = Math.max(local.bestStreak || 0, remote.best_streak || 0);
     const localLast = local.lastStudied || "", remoteLast = remote.last_studied || "";
     if (remoteLast > localLast) { out.lastStudied = remoteLast; out.streak = remote.streak || 0; }
     else if (localLast > remoteLast) { /* local already newer */ }
     else out.streak = Math.max(local.streak || 0, remote.streak || 0);
+
+    /* With both devices' activity in hand the streak can be computed
+       rather than picked, which is the only way it is right when work
+       was split across two machines. */
+    if (typeof Progress !== "undefined" && Object.keys(act).length) {
+      out.streak = Progress.streakFrom(act);
+      out.bestStreak = Math.max(out.bestStreak || 0, out.streak);
+    }
 
     return out;
   },
@@ -170,6 +188,7 @@ const Auth = {
         },
         body: JSON.stringify({
           user_id: this.user.id, days, problems,
+          activity: s.act || {},
           streak: s.streak || 0, best_streak: s.bestStreak || 0,
           last_studied: s.lastStudied || null,
           xp: typeof Points !== "undefined" ? Points.total() : 0
