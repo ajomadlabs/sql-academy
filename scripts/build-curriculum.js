@@ -77,7 +77,7 @@ PLAN.forEach((M,mi)=>{
    The split is derived, not listed by hand, so it cannot drift as
    content changes. */
 const pt = {};
-new Function('g', fs.readFileSync('content/curriculum-patch.js','utf8')+'\ng.CONVERT=CONVERT;g.ADD=ADD;g.NOGRADE=NOGRADE;g.SOLFIX=SOLFIX;g.EFFECT=EFFECT;g.HINT=HINT;g.SELFCONTAINED=SELFCONTAINED;g.EXPECT=EXPECT;')(pt);
+new Function('g', fs.readFileSync('content/curriculum-patch.js','utf8')+'\ng.CONVERT=CONVERT;g.ADD=ADD;g.NOGRADE=NOGRADE;g.SOLFIX=SOLFIX;g.EFFECT=EFFECT;g.HINT=HINT;g.SELFCONTAINED=SELFCONTAINED;g.EXPECT=EXPECT;g.REWORD=REWORD;g.REWORD_REHEARSE=REWORD_REHEARSE;')(pt);
 
 // rewrite the problems that were phrased as "run this and explain"
 const strip = s => String(s).replace(/<[^>]+>/g, '');
@@ -151,10 +151,34 @@ OUT.forEach(d => {
   if (rehearse.length) d.rehearse = rehearse;
 });
 
+/* Rehearse prompts only exist after the split, so their rewording waits
+   until here. Matched on the opening words for the same reason the other
+   patches are: a reorder should fail the build, not patch the wrong one. */
+Object.entries(pt.REWORD_REHEARSE).forEach(([day, items]) => {
+  const d = OUT.find(x => x.d === Number(day));
+  if (!d || !d.rehearse) throw new Error(`reword rehearse: day ${day} has none`);
+  items.forEach(w => {
+    const r = d.rehearse.find(x => strip(x.q).startsWith(strip(w.q0)));
+    if (!r) throw new Error(`reword rehearse day ${day}: "${w.q0}" not found`);
+    r.q = w.q;
+  });
+});
+
 /* Effect checks are keyed by final problem ids, so they attach after the
    split has renumbered everything -- before it, p4_2 is a different
    problem entirely, which is what the assertion below is for. */
 /* attach the effect checks (setup + verification query) */
+Object.entries(pt.REWORD).forEach(([id, w]) => {
+  const [, day, idx] = id.match(/^p(\d+)_(\d+)$/).map(Number);
+  const d = OUT.find(x => x.d === day);
+  const p = d && (d.practice || [])[idx];
+  if (!p) throw new Error(`reword ${id}: not found`);
+  if (!strip(p.q).startsWith(strip(w.q0)))
+    throw new Error(`reword ${id}: expected "${w.q0}" but found "${strip(p.q).slice(0,60)}"`);
+  p.q = w.q;
+  if (w.h) p.h = w.h;
+});
+
 Object.entries(pt.EXPECT).forEach(([id, e]) => {
   const [, day, idx] = id.match(/^p(\d+)_(\d+)$/).map(Number);
   const d = OUT.find(x => x.d === day);
