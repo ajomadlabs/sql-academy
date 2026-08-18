@@ -76,6 +76,19 @@ PLAN.forEach((M,mi)=>{
 
    The split is derived, not listed by hand, so it cannot drift as
    content changes. */
+/* Deeper lessons, written module by module. Each entry replaces that
+   day's concepts and references and adds a real-world scenario. Kept
+   separate from the original source so what was rewritten, and what is
+   still the first draft, stays obvious. */
+const deep = {};
+['m1'].forEach(mod => {
+  const f = `content/lessons-${mod}.js`;
+  if (!fs.existsSync(f)) return;
+  const g = {};
+  new Function('g', fs.readFileSync(f, 'utf8') + `\ng.OUT = ${mod.toUpperCase()};`)(g);
+  Object.assign(deep, g.OUT);
+});
+
 const pt = {};
 new Function('g', fs.readFileSync('content/curriculum-patch.js','utf8')+'\ng.CONVERT=CONVERT;g.ADD=ADD;g.NOGRADE=NOGRADE;g.SOLFIX=SOLFIX;g.EFFECT=EFFECT;g.HINT=HINT;g.SELFCONTAINED=SELFCONTAINED;g.EXPECT=EXPECT;g.REWORD=REWORD;g.REWORD_REHEARSE=REWORD_REHEARSE;g.XREF=XREF;')(pt);
 
@@ -150,6 +163,17 @@ OUT.forEach(d => {
   d.practice = keep;
   if (rehearse.length) d.rehearse = rehearse;
 });
+
+/* Apply the rewritten lessons before the cross-reference pass, so any
+   day reference written into new prose is checked by the same guard. */
+Object.entries(deep).forEach(([day, v]) => {
+  const d = OUT.find(x => x.d === Number(day));
+  if (!d) throw new Error(`deep lesson: day ${day} not found`);
+  if (v.concepts) d.concepts = v.concepts;
+  if (v.scenario) d.scenario = v.scenario;
+  if (v.refs)     d.refs     = v.refs;
+});
+const deepened = Object.keys(deep).length;
 
 /* Cross-day references, fixed over the whole body of a day. */
 pt.XREF.forEach(({day, find, to}) => {
@@ -299,7 +323,11 @@ const CONTENT = OUT.map(d => {
   });
   return {
     day: d.d,
+    // Listed explicitly rather than spread, so nothing from the catalogue
+    // leaks into the gated half by accident -- which does mean a new field
+    // has to be added here or it silently never reaches the page.
     body: { why: d.why, concepts: d.concepts, gotchas: d.gotchas,
+            scenario: d.scenario,
             practice: d.practice, rehearse: d.rehearse, refs: d.refs, cp: d.cp },
     sol
   };
@@ -333,6 +361,7 @@ const fullJs =
 fs.writeFileSync('build/data.js', fullJs);
 fs.writeFileSync('build/content.json', JSON.stringify(CONTENT));
 
+console.log("lessons rewritten in depth:", deepened, "of", OUT.length);
 console.log("public catalogue:", Math.round(catalogJs.length/1024)+" KB | gated content:", Math.round(JSON.stringify(CONTENT).length/1024)+" KB");
 console.log("modules:", MODULES.length, "| classes:", MODULES.reduce((a,x)=>a+x.classes.length,0), "| days:", OUT.length);
 console.log("practice:", OUT.reduce((a,d)=>a+(d.practice||[]).length,0), "| solutions:", Object.keys(SOL).length,

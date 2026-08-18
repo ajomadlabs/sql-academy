@@ -56,6 +56,22 @@ if (D.gotchas && D.gotchas.length) {
   b += `</section>`;
 }
 
+/* How the topic shows up in real work. The concepts explain what a
+   thing is; this is where it bites, who it bites, and what a team
+   actually does about it -- which is the part interviews ask about and
+   most tutorials leave out. */
+if (D.scenario) {
+  const sc = D.scenario;
+  b += `<section class="blk"><h2 class="sec">In the wild</h2>
+    <div class="scen">
+      <h3>${sc.h}</h3>
+      <p class="scen-set">${sc.setup}</p>
+      ${(sc.beats || []).map(x => `<div class="scen-b"><b>${x.t}</b><p>${x.p}</p></div>`).join("")}
+      ${sc.code ? `<pre><code>${sc.code}</code></pre>` : ""}
+      ${sc.close ? `<p class="scen-close">${sc.close}</p>` : ""}
+    </div></section>`;
+}
+
 /* Prompts that are not editor work -- spoken answers, timed re-drills,
    review. They used to sit in the problem list with no way to solve or
    check them, which made the list look broken. */

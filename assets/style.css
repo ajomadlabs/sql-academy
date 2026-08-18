@@ -774,3 +774,14 @@ body[data-gate="open"] .routes{visibility:visible}
 .ide-check:disabled{opacity:.45;cursor:default}
 /* remote-only problems: a label, not a choice */
 span.eng.on{cursor:default}
+
+/* ---------------- in the wild: how the topic shows up at work ---------------- */
+.scen{border-left:2px solid var(--tc);padding:2px 0 2px 18px}
+.scen h3{font-family:var(--mono);font-size:15px;margin:0 0 8px;font-weight:600;color:var(--text)}
+.scen-set{margin:0 0 14px;color:var(--muted);max-width:72ch}
+.scen-b{margin:0 0 12px}
+.scen-b b{display:block;font-size:13.5px;color:var(--text);font-weight:600;margin-bottom:3px}
+.scen-b p{margin:0;color:var(--muted);max-width:72ch;font-size:14.5px}
+.scen-close{margin:12px 0 0;color:var(--text);max-width:72ch;font-size:14.5px}
+.refs a{display:block}
+.refs span{display:block;margin:-2px 0 10px;color:var(--faint);font-size:13px;max-width:70ch}
