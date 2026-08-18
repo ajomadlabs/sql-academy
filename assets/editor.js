@@ -162,6 +162,10 @@ const Editor = {
   },
 
   verdict(r) {
+    if (r.pass && r.expectedError)
+      return `<div class="ide-pass">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <b>Correct.</b> It failed, which is the answer &mdash; ${this.esc(r.code)}: ${this.esc(r.message)}</div>`;
     if (r.pass)
       return `<div class="ide-pass">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>

@@ -159,13 +159,22 @@ const Grader = {
     // Answers that change the database are judged by what they changed,
     // not by what they returned. See checkEffect.
     if (sol && sol.verify) return true;
+    // Answers that are supposed to fail are judged on failing, with the
+    // right error. See checkError.
+    if (sol && sol.expect) return true;
+
     const q = sql.replace(/--[^\n]*/g, "").trim();
+    const parts = q.split(";").map(x => x.trim()).filter(Boolean);
+    if (!parts.length) return false;
     // Allowlist, not denylist: some answers are illustrative fragments
-    // (a BAD/GOOD cheat sheet, a clause to paste into a larger query).
-    // Anything that is not a single complete SELECT or WITH is runnable
-    // at most, never graded.
-    if (!/^\s*(select|with)\b/i.test(q)) return false;
-    return q.split(";").map(s => s.trim()).filter(Boolean).length === 1;
+    // (a clause to paste into a larger query), and anything that writes
+    // is graded by effect instead.
+    //
+    // Several answers are two or three SELECTs shown side by side to
+    // compare. Those are gradeable too -- the result of the last one is
+    // the answer, the same way a psql script leaves you with its final
+    // output.
+    return parts.every(x => /^\s*(select|with)\b/i.test(x));
   },
 
   _cells(rows, fields, ordered) {
@@ -234,8 +243,28 @@ const Grader = {
     };
   },
 
+  /* Some answers are meant to fail: casting 'abc' to an integer, putting
+     an aggregate in WHERE. Marking them ungraded made the lesson land as
+     "run this and take our word for it". They are graded on the error
+     they raise, by SQLSTATE rather than by message -- the code is stable,
+     the wording is not. */
+  async checkError(userSql, sol) {
+    try {
+      const r = await Sandbox.run(userSql);
+      return { pass: false, rows: r,
+               why: "That ran without error. The point of this one is to make Postgres refuse it \u2014 read what it says when it does." };
+    } catch (err) {
+      if (err && err.code === sol.expect)
+        return { pass: true, expectedError: true, code: err.code, message: err.message };
+      return { pass: false,
+               why: `Postgres refused it, but for a different reason (${err.code || "unknown"}): ${err.message}`,
+               hint: `The answer here raises ${sol.expect}.` };
+    }
+  },
+
   async check(userSql, refSql, sol) {
     if (sol && sol.verify) return this.checkEffect(userSql, sol);
+    if (sol && sol.expect) return this.checkError(userSql, sol);
     let mine;
     try {
       mine = await Sandbox.run(userSql);

@@ -77,7 +77,7 @@ PLAN.forEach((M,mi)=>{
    The split is derived, not listed by hand, so it cannot drift as
    content changes. */
 const pt = {};
-new Function('g', fs.readFileSync('content/curriculum-patch.js','utf8')+'\ng.CONVERT=CONVERT;g.ADD=ADD;g.NOGRADE=NOGRADE;g.SOLFIX=SOLFIX;g.EFFECT=EFFECT;g.HINT=HINT;')(pt);
+new Function('g', fs.readFileSync('content/curriculum-patch.js','utf8')+'\ng.CONVERT=CONVERT;g.ADD=ADD;g.NOGRADE=NOGRADE;g.SOLFIX=SOLFIX;g.EFFECT=EFFECT;g.HINT=HINT;g.SELFCONTAINED=SELFCONTAINED;g.EXPECT=EXPECT;')(pt);
 
 // rewrite the problems that were phrased as "run this and explain"
 const strip = s => String(s).replace(/<[^>]+>/g, '');
@@ -155,6 +155,27 @@ OUT.forEach(d => {
    split has renumbered everything -- before it, p4_2 is a different
    problem entirely, which is what the assertion below is for. */
 /* attach the effect checks (setup + verification query) */
+Object.entries(pt.EXPECT).forEach(([id, e]) => {
+  const [, day, idx] = id.match(/^p(\d+)_(\d+)$/).map(Number);
+  const d = OUT.find(x => x.d === day);
+  const p = d && (d.practice || [])[idx];
+  if (!p) throw new Error(`expect ${id}: not found`);
+  if (!strip(p.q).startsWith(strip(e.q0)))
+    throw new Error(`expect ${id}: expected "${e.q0}" but found "${strip(p.q).slice(0,60)}"`);
+  SOL[id] = Object.assign({}, SOL[id], { expect: e.code });
+  delete SOL[id].nograde;          // it is graded now, on the error
+});
+
+Object.entries(pt.SELFCONTAINED).forEach(([id, f]) => {
+  const [, day, idx] = id.match(/^p(\d+)_(\d+)$/).map(Number);
+  const d = OUT.find(x => x.d === day);
+  const p = d && (d.practice || [])[idx];
+  if (!p) throw new Error(`selfcontained ${id}: not found`);
+  if (!strip(p.q).startsWith(strip(f.q0)))
+    throw new Error(`selfcontained ${id}: expected "${f.q0}" but found "${strip(p.q).slice(0,60)}"`);
+  SOL[id] = Object.assign({}, SOL[id], { a: f.a });
+});
+
 Object.entries(pt.HINT).forEach(([id, hh]) => {
   const [, day, idx] = id.match(/^p(\d+)_(\d+)$/).map(Number);
   const d = OUT.find(x => x.d === day);
@@ -271,10 +292,16 @@ console.log("modules:", MODULES.length, "| classes:", MODULES.reduce((a,x)=>a+x.
 console.log("practice:", OUT.reduce((a,d)=>a+(d.practice||[]).length,0), "| solutions:", Object.keys(SOL).length,
             "| rehearse:", OUT.reduce((a,d)=>a+(d.rehearse||[]).length,0));
 const effect = Object.values(SOL).filter(s => s.verify).length;
-const single = Object.values(SOL).filter(s => !s.verify && !s.nograde && /^\s*(select|with)\b/i.test((s.a||"").replace(/--[^\n]*/g,"").trim())
-  && (s.a||"").replace(/--[^\n]*/g,"").split(";").map(x=>x.trim()).filter(Boolean).length===1).length;
-console.log("checkable:", single + effect, `(${single} by result, ${effect} by effect)`,
-            "| eye-checked:", Object.keys(SOL).length - single - effect);
+const expected = Object.values(SOL).filter(s => s.expect).length;
+/* Mirrors Grader.gradeable: every statement a SELECT, however many. */
+const single = Object.values(SOL).filter(s => {
+  if (!s.a || s.verify || s.expect || s.nograde) return false;
+  const parts = s.a.replace(/--[^\n]*/g, "").trim().split(";").map(x => x.trim()).filter(Boolean);
+  return parts.length > 0 && parts.every(x => /^\s*(select|with)\b/i.test(x));
+}).length;
+console.log("checkable:", single + effect + expected,
+            `(${single} by result, ${effect} by effect, ${expected} by expected error)`,
+            "| eye-checked:", Object.keys(SOL).length - single - effect - expected);
 const thin = OUT.filter(d=>(d.practice||[]).length < 4).map(d=>`${d.d}(${(d.practice||[]).length})`);
 console.log("days with fewer than 4 problems:", thin.length?thin.join(" "):"none");
 console.log("dropped (not found):", dropped.length?dropped:"none");
