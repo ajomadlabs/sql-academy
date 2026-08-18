@@ -73,6 +73,7 @@ const Auth = {
         Progress.save();
       }
       await this.push();
+      await this.syncLog();     // before the render event: the graph reads it
       this.paint();
       document.dispatchEvent(new CustomEvent("progress:synced"));
     } catch (err) {
@@ -126,6 +127,144 @@ const Auth = {
     }
 
     return out;
+  },
+
+  /* ---------- activity log ----------
+
+     public.activity_log is the history; everything below only moves it.
+     Three steps, in order, because each depends on the one before:
+     drain anything queued, backfill work that predates the log, then
+     read back the union of every device.
+
+     None of it is allowed to break sync -- the graph is motivational,
+     progress is the thing you cannot lose -- so failures here warn and
+     leave the queue alone for the next attempt. */
+  async syncLog() {
+    if (!this.client || !this.user) return;
+    try {
+      await this.drainLog();
+      await this.pullLog();                 // read BEFORE writing history
+      if (await this.backfillLog()) await this.pullLog();
+    } catch (err) {
+      console.warn("[auth] activity log sync failed:", err.message);
+    }
+  },
+
+  /* Send queued events. Only clears the queue on success, so a dropped
+     connection costs nothing but a retry; the table's primary key makes
+     a duplicated retry a no-op rather than a double count. */
+  async drainLog() {
+    const o = Progress.state.out || {};
+    const keys = Object.keys(o);
+    if (!keys.length) return;
+
+    const rows = keys.map(k => ({
+      user_id: this.user.id, kind: o[k].kind, ref: o[k].ref, done_on: o[k].on
+    }));
+    const { error } = await this.client.from("activity_log")
+      .upsert(rows, { onConflict: "user_id,kind,ref", ignoreDuplicates: true });
+    if (error) throw error;
+
+    // Only drop the keys that were actually sent: a solve landing mid
+    // flight belongs to the next drain, not this one's success.
+    keys.forEach(k => { delete Progress.state.out[k]; });
+    Progress.save();
+  },
+
+  /* Everything that happened before the log existed, in one pass.
+
+     There are two kinds of it and they are not equally knowable:
+
+     - The old per-day counters know WHEN but not WHAT. "3 problems on
+       the 18th" cannot name the three, so those become three dated rows
+       under a legacy ref. The count is exact, which is all the graph
+       draws; the identity was never recorded.
+     - Everything else knows WHAT but not WHEN, because the format
+       before that stored a bare boolean. Those go in undated: counted,
+       never drawn on a day nobody studied.
+
+     Both halves are sized against what the server already has, not
+     against local state, and that is the part that matters. The
+     counters are still mirrored to progress.activity for devices that
+     have not upgraded, so a second device arrives holding a counter for
+     a day the log already recorded properly -- migrating it blind would
+     file the same solve twice and show two problems on a day with one.
+     Reading first means each day is migrated exactly once, by whichever
+     device gets there first, and the rest simply find nothing to do.
+
+     Idempotent by construction, so it needs no ran-once flag: after the
+     first pass every day is accounted for and this builds an empty list
+     and makes no request. Returns whether anything was written. */
+  async backfillLog() {
+    const have = (Progress.state.actDb && Progress.state.actDb.days) || {};
+    const rows = [];
+
+    const act = Progress.state.act || {};
+    Object.keys(act).sort().forEach(day => {
+      if (have[day]) return;                    // the log already covers it
+      const v = act[day];
+      const e = typeof v === "number" ? { p: v, d: 0 } : (v || {});
+      for (let i = 0; i < (e.p || 0); i++)
+        rows.push({ user_id: this.user.id, kind: "p", ref: `legacy:${day}#${i}`, done_on: day });
+      for (let i = 0; i < (e.d || 0); i++)
+        rows.push({ user_id: this.user.id, kind: "d", ref: `legacy:${day}#d${i}`, done_on: day });
+    });
+
+    /* The undated batch tops the log up to what is actually solved.
+       Counting the shortfall against the server total -- dated, undated
+       and the rows just queued above -- is what keeps it from
+       overlapping the dated history rather than adding to it. */
+    const u = (Progress.state.actDb && Progress.state.actDb.undated) || { p: 0, d: 0 };
+    let onServer = { p: u.p || 0, d: u.d || 0 };
+    Object.values(have).forEach(v => { onServer.p += v.p || 0; onServer.d += v.d || 0; });
+    rows.forEach(r => { onServer[r.kind] += 1; });
+
+    let solvedP = 0, solvedD = 0;
+    Object.keys(Progress.state).forEach(k => {
+      if (!Progress.state[k]) return;
+      if (/^d\d+$/.test(k)) solvedD += 1;
+      else if (/^p\d+_\d+$/.test(k)) solvedP += 1;
+    });
+    for (let i = 0; i < solvedP - onServer.p; i++)
+      rows.push({ user_id: this.user.id, kind: "p", ref: `pre:p#${onServer.p + i}`, done_on: null });
+    for (let i = 0; i < solvedD - onServer.d; i++)
+      rows.push({ user_id: this.user.id, kind: "d", ref: `pre:d#${onServer.d + i}`, done_on: null });
+
+    if (!rows.length) return false;
+    // Chunked: a finished course is over a thousand rows and some
+    // proxies balk at a payload that size.
+    for (let i = 0; i < rows.length; i += 250) {
+      const { error } = await this.client.from("activity_log")
+        .upsert(rows.slice(i, i + 250), { onConflict: "user_id,kind,ref", ignoreDuplicates: true });
+      if (error) throw error;
+    }
+    return true;
+  },
+
+  /* One call for the whole card: counts per day plus the undated total,
+     aggregated server-side so the payload stays flat as history grows. */
+  async pullLog() {
+    const since = Progress.shiftDate(Progress.today(), -371);
+    const { data, error } = await this.client.rpc("activity_summary", { since });
+    if (error) throw error;
+    Progress.state.actDb = {
+      days:    (data && data.days)    || {},
+      undated: (data && data.undated) || { p: 0, d: 0 }
+    };
+    /* The streak follows the log too, now that it is the record of
+       what actually happened rather than one device's tally. */
+    Progress.state.streak = Progress.streakFrom(Progress.state.actDb.days);
+    Progress.state.bestStreak = Math.max(
+      Progress.state.bestStreak || 0, Progress.state.streak);
+    Progress.save();
+  },
+
+  _lt: null,
+  queueLog() {
+    if (!this.client || !this.user) return;
+    clearTimeout(this._lt);
+    this._lt = setTimeout(() => this.syncLog()
+      .then(() => document.dispatchEvent(new CustomEvent("progress:synced"))), 1200);
   },
 
   async push() {

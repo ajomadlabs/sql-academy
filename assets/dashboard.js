@@ -131,7 +131,10 @@ function renderGraph() {
   const box = el("graph");
   if (!box) return;
 
-  const act = Progress.state.act || {};
+  /* Server-side history when signed in, local counters otherwise, so
+     the card is right across devices and still renders offline. */
+  const g = Progress.graphData();
+  const act = g.days;
   const today = new Date(Progress.today() + "T00:00:00");
 
   // start on the Sunday on or before 52 weeks ago, so columns are whole weeks
@@ -187,7 +190,7 @@ function renderGraph() {
      cannot be placed on a square. It still counts, so say so plainly
      rather than letting someone who has already done half the course
      open this and be told to solve their first problem. */
-  const pre = Progress.untracked();
+  const pre = g.undated;
   const preBits = [];
   if (pre.p) preBits.push(`${pre.p} problem${pre.p === 1 ? "" : "s"}`);
   if (pre.d) preBits.push(`${pre.d} day${pre.d === 1 ? "" : "s"}`);

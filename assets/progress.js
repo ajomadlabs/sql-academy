@@ -34,7 +34,7 @@ const Progress = {
 
   setProblem(pid, v) {
     this.state[pid] = v;
-    if (v) this.touch("p");       // solving counts as studying
+    if (v) { this.touch("p"); this.logEvent("p", pid); }   // solving counts as studying
     this.save();
   },
 
@@ -66,6 +66,39 @@ const Progress = {
   countFor(v) {
     if (!v) return 0;
     return typeof v === "number" ? v : (v.p || 0) + (v.d || 0);
+  },
+
+  /* ---- the log ----------------------------------------------------------
+
+     The per-day counters above are now a local cache. The history lives
+     in public.activity_log, one row per thing finished, because a
+     counter map can only ever record what the last device to sync
+     believed -- two machines could not both be right, and once it
+     drifted there was nothing to reconstruct it from.
+
+     Events are queued here and drained by Auth. Queuing rather than
+     writing straight through is what keeps a tick from depending on the
+     network: solving a problem on a train has to count. The queue is
+     keyed by the event's identity so replaying it is harmless, which is
+     the same key the table uses as its primary key -- the database is
+     what actually enforces write-once, not this. */
+  outbox() { return (this.state.out = this.state.out || {}); },
+
+  logEvent(kind, ref) {
+    const o = this.outbox();
+    const key = kind + "|" + ref;
+    if (o[key]) return;                       // already waiting to go up
+    o[key] = { kind, ref, on: this.today() };  // local date: the server's is UTC
+    if (typeof Auth !== "undefined" && Auth.user) Auth.queueLog();
+  },
+
+  /* What the graph draws. Prefers the server's answer, which is the
+     union of every device; falls back to the local counters so the card
+     still renders while signed out or offline. */
+  graphData() {
+    const db = this.state.actDb;
+    if (db) return { days: db.days || {}, undated: db.undated || { p: 0, d: 0 } };
+    return { days: this.act(), undated: this.untracked() };
   },
 
   /* Work finished before the graph existed. The old format stored a bare
@@ -134,7 +167,7 @@ const Progress = {
   /* Marking a day complete is the moment that drives the streak. */
   setDay(n, v) {
     this.state["d" + n] = v;
-    if (v) this.touch("d");
+    if (v) { this.touch("d"); this.logEvent("d", String(n)); }
     this.save();
   },
 
@@ -207,6 +240,9 @@ const Progress = {
   reset() {
     this.state = {};
     localStorage.removeItem(KEY);
+    /* actDb and the queue live in state, so they go with it. The rows
+       already in activity_log stay: the log is append-only and clearing
+       local progress is not a claim that the work never happened. */
     if (typeof Auth !== "undefined" && Auth.user) Auth.push();   // clear the remote copy too
   }
 };
