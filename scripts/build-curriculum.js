@@ -177,6 +177,11 @@ Object.entries(pt.REWORD).forEach(([id, w]) => {
     throw new Error(`reword ${id}: expected "${w.q0}" but found "${strip(p.q).slice(0,60)}"`);
   p.q = w.q;
   if (w.h) p.h = w.h;
+  // A reworded question often needs a different answer. Leaving the old
+  // one in place is worse than not rewording at all: the question asks
+  // for one thing and the check expects another.
+  if (w.a) SOL[id] = Object.assign({}, SOL[id], { a: w.a });
+  if (w.n) SOL[id] = Object.assign({}, SOL[id], { n: w.n });
 });
 
 Object.entries(pt.EXPECT).forEach(([id, e]) => {
