@@ -81,7 +81,7 @@ PLAN.forEach((M,mi)=>{
    separate from the original source so what was rewritten, and what is
    still the first draft, stays obvious. */
 const deep = {};
-['m1'].forEach(mod => {
+['m1', 'm2'].forEach(mod => {
   const f = `content/lessons-${mod}.js`;
   if (!fs.existsSync(f)) return;
   const g = {};
