@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Playground — SQL Day by Day</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Run any SQL query against the practice database, right in the browser.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128451;</text></svg>">
+<link rel="stylesheet" href="../assets/style.css?v=50c200fd">
+</head>
+<body class="app">
+<div class="top"><div class="top-in wide">
+  <a class="brand" href="../">SQL Day by Day</a>
+  <nav class="routes">
+    <a href="../">Course</a>
+    <a href="./" class="on">Playground</a>
+  </nav>
+  <div class="topright">
+    <span class="pg-hint">Nothing here is graded</span>
+    <span id="authslot"></span>
+  </div>
+</div></div>
+
+<main class="pg">
+  <section class="pg-main">
+    <div class="pg-tabs" id="pg-samples">
+      <span class="pg-tabs-l">Try</span>
+      <button data-q="SELECT * FROM customers LIMIT 20;">customers</button>
+      <button data-q="SELECT * FROM orders ORDER BY placed_at DESC LIMIT 20;">recent orders</button>
+      <button data-q="SELECT status, count(*) FROM orders GROUP BY status;">by status</button>
+      <button data-q="SELECT count(*) AS all_rows, count(email) AS with_email FROM customers;">the NULL trap</button>
+      <button data-q="SELECT o.order_id, c.full_name, p.name AS product, oi.quantity&#10;FROM orders o&#10;JOIN customers   c  ON c.customer_id = o.customer_id&#10;JOIN order_items oi ON oi.order_id   = o.order_id&#10;JOIN products    p  ON p.product_id  = oi.product_id&#10;LIMIT 20;">4-table join</button>
+      <button data-q="EXPLAIN ANALYZE&#10;SELECT count(*) FROM orders&#10;WHERE placed_at >= DATE '2024-01-01';">a query plan</button>
+    </div>
+
+    <div class="pg-edit">
+      <textarea id="pg-in" spellcheck="false" placeholder="SELECT ..."></textarea>
+    </div>
+
+    <div class="pg-bar">
+      <button class="ide-run" id="pg-run" type="button">Run</button>
+      <span class="ide-k">Cmd/Ctrl + Enter</span>
+      <span class="ide-s" id="pg-status"></span>
+      <button class="ide-reset" id="pg-reset" type="button">Reset data</button>
+    </div>
+
+    <div class="pg-res" id="pg-out"></div>
+  </section>
+
+  <aside class="pg-aside">
+    <div class="pg-aside-h">Tables <span id="pg-tcount"></span></div>
+    <div id="pg-schema" class="pg-schema"><div class="ide-wait">Loading…</div></div>
+  </aside>
+</main>
+
+<script src="../assets/catalog.js?v=e871f630"></script>
+<script src="../assets/config.js?v=a93bb464"></script>
+<script src="../assets/progress.js?v=8b28317f"></script>
+<script src="../assets/auth.js?v=f5b87b18"></script>
+<script src="../assets/gate.js?v=0c567bad"></script>
+<script src="../assets/points.js?v=d022a5f1"></script>
+<script src="../assets/sandbox.js?v=b4c4c6f0"></script>
+<script src="../assets/editor.js?v=586f1c14"></script>
+<script src="../assets/playground.js?v=59a832bb"></script>
+<script>Gate.run();</script>
+</body>
+</html>

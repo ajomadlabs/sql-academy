@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SQL Day by Day</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A complete SQL course: 48 days of lessons, 253 practice problems with checked answers, and a real Postgres database in your browser.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128451;</text></svg>">
+<link rel="stylesheet" href="assets/style.css?v=50c200fd">
+</head>
+<body data-page="landing">
+<div class="top"><div class="top-in">
+  <a class="brand" href="">SQL Day by Day</a>
+  <nav class="routes">
+    <a href="./" class="on">Course</a>
+    <a href="playground/">Playground</a>
+  </nav>
+  <div class="topright">
+    <span id="authslot"></span>
+    <span class="mini-pct" id="minipct">0%</span>
+    <span class="mini-track"><i id="minifill"></i></span>
+  </div></div></div>
+
+<!-- shown to signed-out visitors -->
+<div class="wrap lp" id="landing" hidden>
+  <section class="lp-hero">
+    <p class="eyebrow" id="lp-stats">a real Postgres in your browser</p>
+    <h1>Learn SQL properly,<br>one day at a time.</h1>
+    <p class="lp-sub">A complete SQL curriculum that takes you from <code>SELECT</code> to reading a
+    query plan. Every day tells you exactly what to do &mdash; a goal, the concepts explained with
+    worked examples, the mistakes to expect, and problems you solve against a real database.</p>
+    <div class="lp-cta">
+      <button class="cta lp-go" data-signin type="button"></button>
+      <span class="lp-note">Free &middot; your progress follows you between devices &middot; we store only your email and progress</span>
+    </div>
+  </section>
+
+  <section class="lp-grid">
+    <div class="lp-card">
+      <h3>You are never deciding what to study</h3>
+      <p>Open the day you are on. It has one goal, the concepts behind it, and the problems that
+      prove you have it. Forty-eight days, ordered so nothing depends on something you have not met.</p>
+    </div>
+    <div class="lp-card">
+      <h3>Real Postgres, in the tab</h3>
+      <p>Not a simulation and not SQLite. PostgreSQL compiled to WebAssembly, with a retail schema
+      full of deliberate mess &mdash; nullable emails, unshipped orders, duplicate lines, gaps in
+      the calendar. Window functions, recursive CTEs and <code>EXPLAIN</code> all work.</p>
+    </div>
+    <div class="lp-card">
+      <h3>Answers are checked, not self-reported</h3>
+      <p>Write a query, run it, and it is compared against the expected result. Aliases and column
+      names are ignored, so a correct query written your way still passes. When it fails you are
+      told how the result differed &mdash; never the answer.</p>
+    </div>
+    <div class="lp-card">
+      <h3>Built for interviews, not trivia</h3>
+      <p>Logical execution order, the <code>NOT IN</code> NULL trap, window frames, sargability,
+      gaps-and-islands, slowly changing dimensions. The things that actually get asked, with the
+      spoken answer written out for the ones you have to explain aloud.</p>
+    </div>
+  </section>
+
+  <section class="lp-tiers">
+    <h2 class="sec">What is inside</h2>
+    <div class="lp-tierlist" id="lp-tiers"></div>
+  </section>
+
+</div>
+
+<div class="wrap" id="app" hidden>
+  <div class="dash-hero">
+    <p class="eyebrow" id="curr-range">SQL from zero to interview-ready</p>
+    <h1>One day at a time.</h1>
+    <p>Every day has a goal, the concepts explained with worked examples, the mistakes to expect, and problems to solve against your own database. You never have to decide what to study.</p>
+  </div>
+
+  <div id="continue"></div>
+
+  <div class="overview">
+    <div class="ring" id="ring"></div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+
+  <div class="maph"><h2>The curriculum</h2><span id="curr-stats"></span></div>
+  <div id="map"></div>
+
+  <footer>
+    <button class="btn" id="reset" type="button">Reset progress</button>
+    <span id="saved">Saved in this browser</span>
+  </footer>
+</div>
+<script src="assets/catalog.js?v=e871f630"></script>
+<script src="assets/config.js?v=a93bb464"></script>
+<script src="assets/progress.js?v=8b28317f"></script>
+<script src="assets/auth.js?v=f5b87b18"></script>
+<script src="assets/gate.js?v=0c567bad"></script>
+<script src="assets/points.js?v=d022a5f1"></script>
+<script>
+  // header figure must follow the same state as the dashboard, including
+  // after a sync lands — computing it once at load left it showing 0%.
+  (function () {
+    function paintHeader() {
+      var p = Progress.pct();
+      document.getElementById("minipct").textContent = p + "%";
+      document.getElementById("minifill").style.width = p + "%";
+    }
+    paintHeader();
+    document.addEventListener("progress:synced", paintHeader);
+  })();
+</script>
+<script>window.__DASH_V="b8776c7d";</script>
+<script src="assets/dashboard-boot.js?v=c97b4c93"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+.DS_Store
+*.log
+build/
+
+# Lesson sources. Public repository, gated content: these cannot live here.
+# The built output is in Supabase; keep a private copy of this directory.
+content/
