@@ -68,6 +68,34 @@ const Progress = {
     return typeof v === "number" ? v : (v.p || 0) + (v.d || 0);
   },
 
+  /* Work finished before the graph existed. The old format stored a bare
+     boolean per problem, so there is no date to recover and nothing to
+     backfill -- drawing squares for it would mean inventing days someone
+     did not study, on the one feature where that lie matters most.
+
+     So it is counted instead, and the graph credits it as undated.
+     Derived from the gap between what is solved and what activity
+     recorded rather than snapshotted at upgrade time, which keeps it
+     right for people who had already started before the column existed,
+     and needs no migration. Activity counts events, not problems, so a
+     solve-unsolve-resolve can push the recorded side higher: clamp. */
+  untracked() {
+    const a = this.act();
+    let recP = 0, recD = 0;
+    Object.values(a).forEach(v => {
+      if (typeof v === "number") { recP += v; return; }
+      recP += v.p || 0; recD += v.d || 0;
+    });
+
+    let p = 0, d = 0;
+    Object.keys(this.state).forEach(k => {
+      if (!this.state[k]) return;
+      if (/^d\d+$/.test(k)) d += 1;
+      else if (/^p\d+_\d+$/.test(k)) p += 1;
+    });
+    return { p: Math.max(0, p - recP), d: Math.max(0, d - recD) };
+  },
+
   touch(kind) {
     const t = this.today();
     const e = this.entry(t);

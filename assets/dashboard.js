@@ -183,6 +183,18 @@ function renderGraph() {
   const streak = Progress.streak();
   const best   = Progress.state.bestStreak || 0;
 
+  /* Anything solved before the graph existed has no date attached, so it
+     cannot be placed on a square. It still counts, so say so plainly
+     rather than letting someone who has already done half the course
+     open this and be told to solve their first problem. */
+  const pre = Progress.untracked();
+  const preBits = [];
+  if (pre.p) preBits.push(`${pre.p} problem${pre.p === 1 ? "" : "s"}`);
+  if (pre.d) preBits.push(`${pre.d} day${pre.d === 1 ? "" : "s"}`);
+  const preLine = preBits.length
+    ? `${preBits.join(" and ")} from before the graph started, with no dates recorded`
+    : "";
+
   /* No title attribute: the native tooltip takes a second to appear, cannot
      be styled, and puts the date last. This carries the data instead and a
      single floating element does the display. */
@@ -196,7 +208,9 @@ function renderGraph() {
     <div class="g-head">
       <h2>Your year</h2>
       <span class="g-sum">${active === 0
-        ? "Solve one problem and this starts filling in"
+        ? (preBits.length
+            ? "Starts filling in from today"
+            : "Solve one problem and this starts filling in")
         : `${problems} problem${problems === 1 ? "" : "s"}`
           + `${finished ? ` &middot; ${finished} day${finished === 1 ? "" : "s"} finished` : ""}`
           + ` &middot; active on ${active} day${active === 1 ? "" : "s"}`}</span>
@@ -206,6 +220,7 @@ function renderGraph() {
       <div class="g-grid" style="grid-template-columns:repeat(${weeks.length},minmax(0,1fr))">${cells}</div>
     </div>
     <div class="g-tip" hidden></div>
+    ${preLine ? `<p class="g-pre">${preLine}</p>` : ""}
     <div class="g-foot">
       <span class="g-streak">${streak === 0 && !best
         ? "No streak yet"
