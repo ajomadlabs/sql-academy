@@ -229,6 +229,12 @@ const Progress = {
   },
   /* Read the streak lazily so a stale one decays without needing a write. */
   streak() {
+    /* Same source as the graph. Reading the local counters here while
+       the squares came from the log meant the card could show a mark on
+       today and a streak of zero directly beneath it -- true of any
+       device that had not itself recorded the work. */
+    const g = this.graphData();
+    if (Object.keys(g.days).length) return this.streakFrom(g.days);
     if (this.state.act) return this.streakFrom(this.state.act);
     const last = this.state.lastStudied;
     if (!last) return 0;
