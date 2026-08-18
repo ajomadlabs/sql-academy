@@ -77,7 +77,7 @@ PLAN.forEach((M,mi)=>{
    The split is derived, not listed by hand, so it cannot drift as
    content changes. */
 const pt = {};
-new Function('g', fs.readFileSync('content/curriculum-patch.js','utf8')+'\ng.CONVERT=CONVERT;g.ADD=ADD;g.NOGRADE=NOGRADE;g.SOLFIX=SOLFIX;g.EFFECT=EFFECT;g.HINT=HINT;g.SELFCONTAINED=SELFCONTAINED;g.EXPECT=EXPECT;g.REWORD=REWORD;g.REWORD_REHEARSE=REWORD_REHEARSE;')(pt);
+new Function('g', fs.readFileSync('content/curriculum-patch.js','utf8')+'\ng.CONVERT=CONVERT;g.ADD=ADD;g.NOGRADE=NOGRADE;g.SOLFIX=SOLFIX;g.EFFECT=EFFECT;g.HINT=HINT;g.SELFCONTAINED=SELFCONTAINED;g.EXPECT=EXPECT;g.REWORD=REWORD;g.REWORD_REHEARSE=REWORD_REHEARSE;g.XREF=XREF;')(pt);
 
 // rewrite the problems that were phrased as "run this and explain"
 const strip = s => String(s).replace(/<[^>]+>/g, '');
@@ -149,6 +149,23 @@ OUT.forEach(d => {
   Object.assign(SOL, newSol);
   d.practice = keep;
   if (rehearse.length) d.rehearse = rehearse;
+});
+
+/* Cross-day references, fixed over the whole body of a day. */
+pt.XREF.forEach(({day, find, to}) => {
+  const d = OUT.find(x => x.d === day);
+  if (!d) throw new Error(`xref: day ${day} not found`);
+  let hits = 0;
+  const swap = t => {
+    if (typeof t !== "string" || !t.includes(find)) return t;
+    hits++; return t.split(find).join(to);
+  };
+  (d.concepts || []).forEach(c => { c.p = swap(c.p); c.h = swap(c.h); if (c.out) c.out = swap(c.out); });
+  (d.gotchas  || []).forEach(g => { g.p = swap(g.p); g.t = swap(g.t); });
+  (d.practice || []).forEach(x => { x.q = swap(x.q); x.h = swap(x.h); });
+  (d.rehearse || []).forEach(x => { x.q = swap(x.q); x.h = swap(x.h); });
+  d.why = swap(d.why); d.cp = swap(d.cp);
+  if (!hits) throw new Error(`xref day ${day}: "${find}" not found`);
 });
 
 /* Rehearse prompts only exist after the split, so their rewording waits
