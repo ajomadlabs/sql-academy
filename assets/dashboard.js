@@ -144,9 +144,11 @@ function renderGraph() {
   let peak = 0;
   for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
     const key = iso(d);
-    const n = act[key] || 0;
+    const v = act[key];
+    const n = Progress.countFor(v);
     if (n > peak) peak = n;
-    counts.push({ key, n, dow: d.getDay(), month: d.getMonth() });
+    const e = typeof v === "number" ? { p: v, d: 0 } : (v || { p: 0, d: 0 });
+    counts.push({ key, n, p: e.p || 0, done: e.d || 0, dow: d.getDay(), month: d.getMonth() });
   }
 
   const level = n => {
@@ -175,34 +177,87 @@ function renderGraph() {
     }
   });
 
-  const active = counts.filter(c => c.n > 0).length;
-  const total  = counts.reduce((n, c) => n + c.n, 0);
+  const active   = counts.filter(c => c.n > 0).length;
+  const problems = counts.reduce((n, c) => n + c.p, 0);
+  const finished = counts.reduce((n, c) => n + c.done, 0);
   const streak = Progress.streak();
   const best   = Progress.state.bestStreak || 0;
 
+  /* No title attribute: the native tooltip takes a second to appear, cannot
+     be styled, and puts the date last. This carries the data instead and a
+     single floating element does the display. */
   const cells = weeks.map(w => w.map(c => {
     if (!c) return `<i class="g-c g-pad"></i>`;
-    const when = new Date(c.key + "T00:00:00")
-      .toLocaleDateString(undefined, { day: "numeric", month: "short" });
-    const what = c.n === 0 ? "nothing" : `${c.n} ${c.n === 1 ? "thing" : "things"}`;
-    return `<i class="g-c" data-l="${level(c.n)}" title="${what} on ${when}"></i>`;
+    return `<i class="g-c" data-l="${level(c.n)}" data-day="${c.key}"`
+         + ` data-p="${c.p}" data-done="${c.done}"></i>`;
   }).join("")).join("");
 
   box.innerHTML = `
     <div class="g-head">
       <h2>Your year</h2>
-      <span class="g-sum">${total} ${total === 1 ? "thing" : "things"} on ${active} ${active === 1 ? "day" : "days"}</span>
+      <span class="g-sum">${active === 0
+        ? "Solve one problem and this starts filling in"
+        : `${problems} problem${problems === 1 ? "" : "s"}`
+          + `${finished ? ` &middot; ${finished} day${finished === 1 ? "" : "s"} finished` : ""}`
+          + ` &middot; active on ${active} day${active === 1 ? "" : "s"}`}</span>
     </div>
     <div class="g-wrap">
-      <div class="g-months" style="grid-template-columns:repeat(${weeks.length},var(--gc))">${labels}</div>
-      <div class="g-grid" style="grid-template-columns:repeat(${weeks.length},var(--gc))">${cells}</div>
+      <div class="g-months" style="grid-template-columns:repeat(${weeks.length},minmax(0,1fr))">${labels}</div>
+      <div class="g-grid" style="grid-template-columns:repeat(${weeks.length},minmax(0,1fr))">${cells}</div>
     </div>
+    <div class="g-tip" hidden></div>
     <div class="g-foot">
-      <span class="g-streak"><b>${streak}</b> day${streak === 1 ? "" : "s"} in a row${best > streak ? ` &middot; best ${best}` : ""}</span>
+      <span class="g-streak">${streak === 0 && !best
+        ? "No streak yet"
+        : `<b>${streak}</b> day${streak === 1 ? "" : "s"} in a row${best > streak ? ` &middot; best ${best}` : ""}`}</span>
       <span class="g-key">less
         <i class="g-c" data-l="0"></i><i class="g-c" data-l="1"></i><i class="g-c" data-l="2"></i><i class="g-c" data-l="3"></i><i class="g-c" data-l="4"></i>
         more</span>
     </div>`;
+
+  wireTip(box);
+}
+
+/* One tooltip, moved to whichever square is under the pointer. Follows the
+   cell rather than the cursor so it does not jitter, and clamps to the
+   card so squares at either end are not cut off. */
+function wireTip(box) {
+  const tip = box.querySelector(".g-tip");
+  const grid = box.querySelector(".g-grid");
+  if (!tip || !grid) return;
+
+  const label = c => {
+    const p = +c.dataset.p, d = +c.dataset.done;
+    const when = new Date(c.dataset.day + "T00:00:00")
+      .toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+    const bits = [];
+    if (p) bits.push(`<b>${p}</b> problem${p === 1 ? "" : "s"} solved`);
+    if (d) bits.push(`<b>${d}</b> day${d === 1 ? "" : "s"} finished`);
+    return `<span class="g-tip-w">${bits.length ? bits.join(" &middot; ") : "Nothing this day"}</span>`
+         + `<span class="g-tip-d">${when}</span>`;
+  };
+
+  const show = c => {
+    tip.innerHTML = label(c);
+    tip.hidden = false;
+    const cell = c.getBoundingClientRect(), host = box.getBoundingClientRect();
+    const w = tip.offsetWidth;
+    let left = cell.left - host.left + cell.width / 2 - w / 2;
+    left = Math.max(8, Math.min(left, host.width - w - 8));
+    tip.style.left = `${left}px`;
+    tip.style.top = `${cell.top - host.top - tip.offsetHeight - 8}px`;
+  };
+
+  grid.addEventListener("mouseover", e => {
+    const c = e.target.closest(".g-c[data-day]");
+    if (c) show(c);
+  });
+  grid.addEventListener("mouseleave", () => { tip.hidden = true; });
+  // touch: tap a square to read it
+  grid.addEventListener("click", e => {
+    const c = e.target.closest(".g-c[data-day]");
+    if (c) show(c); else tip.hidden = true;
+  });
 }
 
 function renderAll() {

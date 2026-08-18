@@ -101,9 +101,12 @@ const Auth = {
        double-count a day worked on two devices that both synced; the
        larger number is the closer estimate and cannot inflate on every
        subsequent sync the way a sum would. */
-    const act = Object.assign({}, local.act || {});
-    Object.entries(remote.activity || {}).forEach(([day, n]) => {
-      act[day] = Math.max(act[day] || 0, n || 0);
+    const norm = v => (typeof v === "number" ? { p: v, d: 0 } : (v || { p: 0, d: 0 }));
+    const act = {};
+    Object.keys(local.act || {}).forEach(day => { act[day] = norm(local.act[day]); });
+    Object.entries(remote.activity || {}).forEach(([day, v]) => {
+      const r = norm(v), l = act[day] || { p: 0, d: 0 };
+      act[day] = { p: Math.max(l.p || 0, r.p || 0), d: Math.max(l.d || 0, r.d || 0) };
     });
     out.act = act;
 

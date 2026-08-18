@@ -34,7 +34,7 @@ const Progress = {
 
   setProblem(pid, v) {
     this.state[pid] = v;
-    if (v) this.touch();          // solving counts as studying
+    if (v) this.touch("p");       // solving counts as studying
     this.save();
   },
 
@@ -53,10 +53,26 @@ const Progress = {
      empty chart. */
   act() { return (this.state.act = this.state.act || {}); },
 
-  touch() {
-    const t = this.today();
+  /* kind is "p" for a problem solved, "d" for a day completed, so the
+     graph can say "3 problems and a day finished" rather than "4 things".
+     Older entries are plain numbers, which are read as problems. */
+  entry(day) {
     const a = this.act();
-    a[t] = (a[t] || 0) + 1;
+    const cur = a[day];
+    if (typeof cur === "number") return (a[day] = { p: cur, d: 0 });
+    return (a[day] = cur || { p: 0, d: 0 });
+  },
+
+  countFor(v) {
+    if (!v) return 0;
+    return typeof v === "number" ? v : (v.p || 0) + (v.d || 0);
+  },
+
+  touch(kind) {
+    const t = this.today();
+    const e = this.entry(t);
+    e[kind === "d" ? "d" : "p"] += 1;
+    const a = this.act();
     this.state.lastStudied = t;
     const s = this.streakFrom(a);
     this.state.streak = s;
@@ -66,7 +82,7 @@ const Progress = {
   /* Counts back from today, allowing yesterday to be the latest day so a
      streak is not lost before the day is over. */
   streakFrom(a) {
-    const days = Object.keys(a || {}).filter(d => a[d] > 0).sort();
+    const days = Object.keys(a || {}).filter(d => this.countFor(a[d]) > 0).sort();
     if (!days.length) return 0;
     const last = days[days.length - 1];
     const gap = this.daysBetween(last, this.today());
@@ -90,7 +106,7 @@ const Progress = {
   /* Marking a day complete is the moment that drives the streak. */
   setDay(n, v) {
     this.state["d" + n] = v;
-    if (v) this.touch();
+    if (v) this.touch("d");
     this.save();
   },
 

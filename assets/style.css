@@ -788,7 +788,7 @@ span.eng.on{cursor:default}
 
 /* ---------------- activity graph ---------------- */
 .graph{background:var(--surface);border:1px solid var(--line);border-radius:12px;
-       padding:20px 22px;margin:0 0 26px}
+       padding:20px 22px;margin:0 0 26px;position:relative}
 .g-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;
         margin:0 0 14px}
 .g-head h2{font-family:var(--mono);font-size:15px;font-weight:600;margin:0;color:var(--text)}
@@ -796,13 +796,16 @@ span.eng.on{cursor:default}
 
 /* the grid scrolls sideways on narrow screens rather than squashing the
    squares into unreadable slivers */
-.graph{--gc:12px}
+/* The grid fills the card. minmax(0,1fr) rather than 1fr because 53
+   columns and 52 gaps round up to a pixel more than the container, and
+   plain 1fr refuses to shrink below its content — which produced a
+   scrollbar under a grid that visibly fitted. */
 .g-wrap{overflow-x:auto;padding-bottom:2px}
-.g-months{display:grid;gap:3px;width:max-content;height:14px;margin-bottom:3px}
+.g-months{display:grid;gap:4px;min-width:560px;height:14px;margin-bottom:4px}
 .g-mo{font-family:var(--mono);font-size:10px;color:var(--faint);grid-row:1;white-space:nowrap}
-.g-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,var(--gc));gap:3px;
-        width:max-content}
-.g-c{display:block;width:var(--gc);height:var(--gc);border-radius:2px;background:var(--surface-2);
+.g-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,auto);gap:4px;
+        min-width:560px}
+.g-c{display:block;width:100%;aspect-ratio:1;border-radius:3px;background:var(--surface-2);
      border:1px solid var(--line)}
 .g-pad{background:none;border-color:transparent}
 .g-c[data-l="1"]{background:color-mix(in srgb,var(--done) 26%,var(--surface-2));border-color:transparent}
@@ -816,5 +819,32 @@ span.eng.on{cursor:default}
 .g-streak b{color:var(--text);font-family:var(--mono);font-variant-numeric:tabular-nums}
 .g-key{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10.5px;
        color:var(--faint)}
-.g-key .g-c{width:11px;height:11px}
+.g-key .g-c{width:11px;height:11px;aspect-ratio:auto;flex:none}
 @media (max-width:700px){ .graph{padding:16px} }
+
+/* the tooltip: instant, styled, and it leads with what you did */
+.g-tip{position:absolute;z-index:20;pointer-events:none;
+       background:var(--ground);border:1px solid var(--line-strong);border-radius:8px;
+       padding:8px 11px;box-shadow:var(--shadow-l);max-width:260px}
+.g-tip[hidden]{display:none}
+.g-tip-w{display:block;font-size:13px;color:var(--text);white-space:nowrap}
+.g-tip-w b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.g-tip-d{display:block;font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:2px;
+         white-space:nowrap}
+.g-c[data-day]:hover{outline:1.5px solid var(--text);outline-offset:1px}
+
+/* The header is a single non-wrapping row with a fixed-width progress bar
+   pinned right, so below roughly 430px it pushes past the viewport and the
+   whole page scrolls sideways. Predates the activity graph; found while
+   checking the graph on a phone.
+
+   The progress bar is the least important thing up there, so it goes first
+   and the row is allowed to wrap. */
+@media (max-width:520px){
+  .top-in{flex-wrap:wrap;gap:8px 12px}
+  .topright{margin-left:auto}
+  .mini-track{width:44px}
+}
+@media (max-width:430px){
+  .mini-track,.mini-pct{display:none}
+}
