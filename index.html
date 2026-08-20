@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>SQL Day by Day</title>
+<title>Levich Academy</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="A complete SQL course: 48 days of lessons, 253 practice problems with checked answers, and a real Postgres database in your browser.">
+<meta name="description" content="Levich Academy builds one course at a time and finishes it before starting the next. SQL is the first: 48 days, 241 checked problems, and a real Postgres in your browser. Free.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#128451;</text></svg>">
-<link rel="stylesheet" href="assets/style.css?v=0c25c816">
+<link rel="stylesheet" href="assets/style.css?v=0ba943cd">
 </head>
 <body data-page="landing">
 <div class="top"><div class="top-in">
-  <a class="brand" href="">SQL Day by Day</a>
+  <a class="brand" href="">Levich Academy</a>
   <nav class="routes">
     <a href="./" class="on">Course</a>
     <a href="playground/">Playground</a>
@@ -23,48 +23,104 @@
 
 <!-- shown to signed-out visitors -->
 <div class="wrap lp" id="landing" hidden>
+
   <section class="lp-hero">
-    <p class="eyebrow" id="lp-stats">a real Postgres in your browser</p>
-    <h1>Learn SQL properly,<br>one day at a time.</h1>
-    <p class="lp-sub">A complete SQL curriculum that takes you from <code>SELECT</code> to reading a
-    query plan. Every day tells you exactly what to do &mdash; a goal, the concepts explained with
-    worked examples, the mistakes to expect, and problems you solve against a real database.</p>
-    <div class="lp-cta">
-      <button class="cta lp-go" data-signin type="button"></button>
-      <span class="lp-note">Free &middot; your progress follows you between devices &middot; we store only your email and progress</span>
+    <p class="eyebrow">Levich Academy</p>
+    <h1>Learn it properly,<br>one day at a time.</h1>
+    <p class="lp-sub">One course at a time, finished before the next one starts.
+    SQL is the first: it takes you from <code>SELECT</code> to reading a query plan,
+    against a real Postgres running in this tab.</p>
+  </section>
+
+  <!-- The single course, and the single action. Everything a person needs
+       to decide is on this card; nothing about it is revealed only after
+       signing in. -->
+  <section class="lp-course">
+    <div class="lp-course-h">
+      <div>
+        <h2>SQL Day by Day</h2>
+        <p class="lp-stats" id="lp-stats">a real Postgres in your browser</p>
+      </div>
+      <span class="lp-badge">Available now</span>
+    </div>
+    <div class="lp-course-b">
+      <p>Every day tells you exactly what to do: one goal, the concepts explained with
+      worked examples, the mistakes to expect, and problems you solve against a database
+      with real mess in it &mdash; nullable emails, unshipped orders, duplicate lines,
+      gaps in the calendar.</p>
+      <div class="lp-cta">
+        <button class="cta lp-go" data-signin type="button"></button>
+        <span class="lp-note">Free. No card, now or later.</span>
+      </div>
     </div>
   </section>
 
-  <section class="lp-grid">
-    <div class="lp-card">
-      <h3>You are never deciding what to study</h3>
-      <p>Open the day you are on. It has one goal, the concepts behind it, and the problems that
-      prove you have it. Forty-eight days, ordered so nothing depends on something you have not met.</p>
-    </div>
-    <div class="lp-card">
-      <h3>Real Postgres, in the tab</h3>
-      <p>Not a simulation and not SQLite. PostgreSQL compiled to WebAssembly, with a retail schema
-      full of deliberate mess &mdash; nullable emails, unshipped orders, duplicate lines, gaps in
-      the calendar. Window functions, recursive CTEs and <code>EXPLAIN</code> all work.</p>
-    </div>
-    <div class="lp-card">
-      <h3>Answers are checked, not self-reported</h3>
-      <p>Write a query, run it, and it is compared against the expected result. Aliases and column
-      names are ignored, so a correct query written your way still passes. When it fails you are
-      told how the result differed &mdash; never the answer.</p>
-    </div>
-    <div class="lp-card">
-      <h3>Built for interviews, not trivia</h3>
-      <p>Logical execution order, the <code>NOT IN</code> NULL trap, window frames, sargability,
-      gaps-and-islands, slowly changing dimensions. The things that actually get asked, with the
-      spoken answer written out for the ones you have to explain aloud.</p>
+  <section class="lp-how">
+    <h2 class="sec">How it works</h2>
+    <ol class="lp-steps">
+      <li><b>Open the day you are on.</b> You are never deciding what to study next.
+        Forty-eight days, ordered so nothing depends on something you have not met.</li>
+      <li><b>Read the day, then solve it.</b> The lesson is written out properly &mdash;
+        why it works, not just the syntax &mdash; and then you write queries.</li>
+      <li><b>Answers get checked, not self-reported.</b> Your query runs against a real
+        database and the result is compared. Written your way, with your own aliases, it
+        still passes. When it fails you are told how the result differed &mdash; never
+        the answer.</li>
+    </ol>
+  </section>
+
+  <!-- Said plainly and kept accurate. Anything on this list that stopped
+       being true would have to come off it. -->
+  <section class="lp-plain">
+    <h2 class="sec">What this is, and what it is not</h2>
+    <ul class="lp-list">
+      <li><b>It is free.</b> There is no paid tier, no trial, and no card &mdash; not
+        at the start and not later.</li>
+      <li><b>You can see everything before signing in.</b> The full curriculum is
+        further down this page. You do not sign in to find out what you are getting.</li>
+      <li><b>Signing in is for your progress, not for us.</b> It is how the course
+        follows you from laptop to phone. We store the email and name Google gives us,
+        and what you have finished. That is the whole list.</li>
+      <li><b>No ads, and no email.</b> Signing in does not put you on a list. There is
+        no sequence, no newsletter, and nothing to unsubscribe from.</li>
+      <li><b>No certificate.</b> Nobody is impressed by one. Being able to write the
+        query in the interview is the thing that counts.</li>
+      <li><b>Nothing expires and nothing is lost.</b> Stop for three months and it is
+        exactly where you left it.</li>
+    </ul>
+  </section>
+
+  <section class="lp-who">
+    <h2 class="sec">Before you start</h2>
+    <div class="lp-two">
+      <div>
+        <h3>What you need</h3>
+        <p>A browser. Nothing to install, no database to set up, no account with anyone
+        except the Google sign-in. It assumes you have never written SQL.</p>
+      </div>
+      <div>
+        <h3>Who it is for</h3>
+        <p>People who use SQL occasionally and would like to stop guessing, and people
+        preparing for interviews who can follow a tutorial but freeze on a window
+        function under pressure.</p>
+      </div>
     </div>
   </section>
 
   <section class="lp-tiers">
-    <h2 class="sec">What is inside</h2>
+    <h2 class="sec">The whole curriculum</h2>
     <div class="lp-tierlist" id="lp-tiers"></div>
+    <div class="lp-cta lp-cta-end">
+      <button class="cta lp-go" data-signin type="button"></button>
+      <span class="lp-note">Starts at Day 1. It is free.</span>
+    </div>
   </section>
+
+  <footer class="lp-foot">
+    <p><b>SQL is the only finished course.</b> More will follow when they are as done
+    as this one &mdash; not listed here before then.</p>
+    <p class="lp-foot-l">Levich Academy &middot; <a href="https://levich.co">levich.co</a></p>
+  </footer>
 
 </div>
 
@@ -97,7 +153,7 @@
 <script src="assets/config.js?v=a93bb464"></script>
 <script src="assets/progress.js?v=8ec4c21f"></script>
 <script src="assets/auth.js?v=b5fb87e1"></script>
-<script src="assets/gate.js?v=0c567bad"></script>
+<script src="assets/gate.js?v=0a549a87"></script>
 <script src="assets/points.js?v=d022a5f1"></script>
 <script>
   // header figure must follow the same state as the dashboard, including

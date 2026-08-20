@@ -54,3 +54,31 @@ if day_v:
         if new != html:
             page.write_text(new, encoding="utf-8")
     print(f"  day.js        boot v={day_v}")
+
+
+# ---------------------------------------------------------------
+# The landing page states the size of the course in prose, where no
+# amount of care keeps it true: it said 253 problems for a while after
+# the practice/rehearse split moved the real figure to 241, and nothing
+# noticed. The page reads "no traps", so a stale number there is worse
+# than a cosmetic bug. Fail the build instead of shipping it.
+# ---------------------------------------------------------------
+import re as _re
+
+_cat = root / "assets" / "catalog.js"
+_idx = root / "index.html"
+if _cat.exists() and _idx.exists():
+    _src = _cat.read_text(encoding="utf-8")
+    _days = _re.findall(r'"np"\s*:\s*(\d+)', _src) or _re.findall(r'\bnp:\s*(\d+)', _src)
+    _n_days, _n_probs = len(_days), sum(int(x) for x in _days)
+
+    _html = _idx.read_text(encoding="utf-8")
+    _claims = [(int(d), int(p)) for d, p in
+               _re.findall(r'(\d+)\s+days?,\s*(\d+)\s+checked problems', _html)]
+    for _d, _p in _claims:
+        if (_d, _p) != (_n_days, _n_probs):
+            raise SystemExit(
+                f"stamp-assets: index.html claims {_d} days / {_p} problems, "
+                f"curriculum has {_n_days} / {_n_probs}. Update the copy.")
+    if _claims:
+        print(f"  curriculum    copy matches ({_n_days} days, {_n_probs} problems)")

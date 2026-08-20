@@ -68,10 +68,15 @@ const Landing = {
       b.addEventListener("click", e => {
         e.preventDefault();
         // keep whatever deep link brought them here
+        /* Derive the root rather than naming it: "/sql-academy/" was the
+           GitHub Pages subpath, and on any other host it matches nothing,
+           so the landing page itself would be stored as the deep link to
+           return to. siteRoot() already comes from the brand link. */
+        const root = new URL(Auth.siteRoot()).pathname;
+        const here = location.pathname;
         if (!sessionStorage.getItem("after-signin") &&
-            !location.pathname.endsWith("/sql-academy/") &&
-            !location.pathname.endsWith("/index.html"))
-          sessionStorage.setItem("after-signin", location.pathname);
+            here !== root && !here.endsWith("/index.html"))
+          sessionStorage.setItem("after-signin", here);
         Auth.signIn();
       }));
   }
